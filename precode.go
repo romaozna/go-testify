@@ -14,10 +14,7 @@ func mainHandle(w http.ResponseWriter, req *http.Request) {
 	countStr := req.URL.Query().Get("count")
 	if countStr == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_, err := w.Write([]byte("count missing"))
-		if err != nil {
-			return
-		}
+		_, _ = w.Write([]byte("count missing"))
 		return
 	}
 

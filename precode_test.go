@@ -11,15 +11,9 @@ import (
 
 func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
 	totalCount := 4
-	req, err := http.NewRequest("GET", "/cafe", nil)
-	if err != nil {
-		require.NoError(t, err)
-	}
+	req, _ := http.NewRequest("GET", "/cafe", nil)
 
-	q := req.URL.Query()
-	q.Add("count", "5")
-	q.Add("city", "moscow")
-	req.URL.RawQuery = q.Encode()
+	req.URL.RawQuery = prepareQuery(req, "5", "moscow")
 
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
@@ -28,21 +22,18 @@ func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
 	// здесь нужно добавить необходимые проверки
 	resp := responseRecorder.Body.String()
 	body := strings.Split(resp, ",")
-	assert.Equal(t, totalCount, len(body))
+	assert.Len(t, body, totalCount)
 }
 
 func TestMainHandlerWhenUnsupportedCity(t *testing.T) {
 	expectedError := "wrong city value"
-	expectedCode := 400
+	expectedCode := http.StatusBadRequest
 	req, err := http.NewRequest("GET", "/cafe", nil)
 	if err != nil {
 		require.NoError(t, err)
 	}
 
-	q := req.URL.Query()
-	q.Add("count", "4")
-	q.Add("city", "ufa")
-	req.URL.RawQuery = q.Encode()
+	req.URL.RawQuery = prepareQuery(req, "1", "ufa")
 
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
@@ -54,16 +45,13 @@ func TestMainHandlerWhenUnsupportedCity(t *testing.T) {
 }
 
 func TestMainHandlerWhenQueryIsCorrect(t *testing.T) {
-	expectedCode := 200
+	expectedCode := http.StatusOK
 	req, err := http.NewRequest("GET", "/cafe", nil)
 	if err != nil {
 		require.NoError(t, err)
 	}
 
-	q := req.URL.Query()
-	q.Add("count", "1")
-	q.Add("city", "moscow")
-	req.URL.RawQuery = q.Encode()
+	req.URL.RawQuery = prepareQuery(req, "1", "moscow")
 
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
@@ -71,4 +59,11 @@ func TestMainHandlerWhenQueryIsCorrect(t *testing.T) {
 	respCode := responseRecorder.Code
 	require.Equal(t, expectedCode, respCode)
 	require.NotEmpty(t, responseRecorder.Body)
+}
+
+func prepareQuery(req *http.Request, count string, city string) string {
+	q := req.URL.Query()
+	q.Add("count", count)
+	q.Add("city", city)
+	return q.Encode()
 }
